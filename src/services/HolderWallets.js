@@ -136,6 +136,8 @@ class HolderWallets extends Base {
         }, config.requestTimeout);
       } else {
         this.wallets = [];
+        this.resetIteration();
+        this.resetIterations();
         console.log('New wallets added, balances updated');
         return resolve();
       }
