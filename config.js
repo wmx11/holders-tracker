@@ -5,4 +5,5 @@ module.exports = {
   rpcEndpoint: 'https://bsc-dataseed1.binance.org',
   blockChunks: 2000,
   requestTimeout: 20,
+  serviceEndpoint: '',
 }
