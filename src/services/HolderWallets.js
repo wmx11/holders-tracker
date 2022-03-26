@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 const { forEachAsync } = require('foreachasync');
 
 const Base = require('./Base');
@@ -6,8 +6,10 @@ const Base = require('./Base');
 const Transfers = require('../../models/Transfers');
 const Holders = require('../../models/Holders');
 
+const excludedWallets = require('../../utils/excludedWallets');
 const toDecimals = require('../../utils/toDecimals');
 const config = require('../../config');
+const axios = require('axios');
 
 class HolderWallets extends Base {
   constructor() {
@@ -15,19 +17,49 @@ class HolderWallets extends Base {
     this.wallets = [];
   }
 
+  calculateMinHoldingValue(price) {
+    const tokensForOneCent = (1 / price) / 100;
+    return tokensForOneCent;
+  }
+
   /**
    * Return wallets that have a balance greater than 0
    * @returns Number
    */
   async getHoldersCount() {
+    const { data: { price } } = await axios(`${config.serviceEndpoint}/get-price`);
+
+    if (!price) {
+      return null;
+    }
+
     const holdersCount = await Holders.count({
-      where: {
-        value: {
-          [Op.gte]: 7 / 10 ** 18,
+      where: [
+        {
+          value: {
+            [Op.gte]: this.calculateMinHoldingValue(price) / 10 ** 11,
+          },
         },
-      },
+        ...excludedWallets.map((wallet) => ({
+          address: { [Op.notLike]: wallet },
+        })),
+      ],
     });
     return holdersCount;
+  }
+
+  /**
+   * Returns the average holdings
+   * @returns {Object}
+   */
+  async getAverageHoldings() {
+    const [results] = await Holders.findAll({
+      attributes: [[Sequelize.fn('avg', Sequelize.col('value')), 'average']],
+      where: excludedWallets.map((wallet) => ({
+        address: { [Op.notLike]: wallet },
+      })),
+    });
+    return results.dataValues.average;
   }
 
   /**
