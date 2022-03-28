@@ -33,4 +33,21 @@ module.exports = (app) => {
       console.log(err);
     }
   });
+
+  app.get('/get-position/:address', async (req, res) => {
+    try {
+      const { address } = req.params;
+
+      if (!address) {
+        return res.send({ address: false });
+      }
+
+      const position = await holderWallets.getWalletPosition(address);
+
+      return res.send({ address: position });
+    } catch (err) {
+      res.send(err);
+      console.log(err);
+    }
+  });
 };
