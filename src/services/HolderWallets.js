@@ -17,6 +17,28 @@ class HolderWallets extends Base {
     this.wallets = [];
   }
 
+  /**
+   * Returns the position of the wallet address 
+   * In the holders list
+   * @param {String} walletAddress 
+   * @returns Number 
+   */
+  async getWalletPosition(walletAddress) {
+    const orderedWallets = await Holders.findAll({
+      order: [
+        ['value', 'DESC']
+      ]
+    });
+
+    const walletPosition = orderedWallets.findIndex((wallet) => wallet.address.toLowerCase() === walletAddress.toLowerCase());
+
+    if (walletPosition > -1) {
+      return walletPosition + 1;
+    }
+
+    return walletPosition;
+  }
+
   calculateMinHoldingValue(price) {
     const tokensForOneCent = (1 / price) / 100;
     return tokensForOneCent;
@@ -37,12 +59,9 @@ class HolderWallets extends Base {
       where: [
         {
           value: {
-            [Op.gte]: this.calculateMinHoldingValue(price) / 10 ** 11,
+            [Op.gte]: this.calculateMinHoldingValue(price) / 10 ** 16,
           },
         },
-        ...excludedWallets.map((wallet) => ({
-          address: { [Op.notLike]: wallet },
-        })),
       ],
     });
     return holdersCount;
