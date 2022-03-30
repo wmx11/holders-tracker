@@ -3,31 +3,40 @@ const { Op } = require('sequelize');
 const Holders = require('../../models/Holders');
 const HolderWallets = require('../services/HolderWallets');
 
-const { subHours, format, set } = require('date-fns');
+const { format, subMinutes } = require('date-fns');
 
 const holderWallets = new HolderWallets();
+let isIterating = false;
 
-(async () => {
+module.exports = async () => {
+  if (isIterating) {
+    return;
+  }
+
+
   console.log('--- Getting wallets to update ---');
   console.log('--- ... ---');
-
+  
+  const lastUpdatedTime = () => subMinutes(new Date(), 30);
+  
   const walletsToUpdate = await Holders.findAll({
     where: {
       updatedAt: {
-        [Op.lte]: set(subHours(new Date(), { hours: 1 }), {
-          minutes: 0,
-          seconds: 0,
-        }),
+        [Op.lte]: lastUpdatedTime()
       },
     },
   });
-
+  
   console.log('--- Updating wallets ---');
   console.log('--- ... ---');
 
+  isIterating = true;
+
   await holderWallets.iterate(walletsToUpdate);
 
-  console.log(format(new Date().now(), 'yyy-MM-dd HH:mm:ss'));
+  isIterating = false;
+  
+  console.log(format(Date.now(), 'yyy-MM-dd HH:mm:ss'));
   console.log('--- Wallets have been updated ---');
   console.log('--- ... ---');
-})();
+};
