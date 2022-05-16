@@ -1,6 +1,6 @@
-const { Op } = require('sequelize');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
-const Holders = require('../../models/Holders');
 const HolderWallets = require('../services/HolderWallets');
 
 const { format, subMinutes } = require('date-fns');
@@ -13,20 +13,19 @@ module.exports = async () => {
     return;
   }
 
-
   console.log('--- Getting wallets to update ---');
   console.log('--- ... ---');
-  
+
   const lastUpdatedTime = () => subMinutes(new Date(), 30);
-  
-  const walletsToUpdate = await Holders.findAll({
+
+  const walletsToUpdate = await prisma.holders.findMany({
     where: {
-      updatedAt: {
-        [Op.lte]: lastUpdatedTime()
+      updated_at: {
+        lte: lastUpdatedTime(),
       },
     },
   });
-  
+
   console.log('--- Updating wallets ---');
   console.log('--- ... ---');
 
@@ -35,7 +34,7 @@ module.exports = async () => {
   await holderWallets.iterate(walletsToUpdate);
 
   isIterating = false;
-  
+
   console.log(format(Date.now(), 'yyy-MM-dd HH:mm:ss'));
   console.log('--- Wallets have been updated ---');
   console.log('--- ... ---');

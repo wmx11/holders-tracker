@@ -72,12 +72,6 @@ class HolderWallets extends Base {
         value: true,
       },
     });
-    // const [results] = await Holders.findAll({
-    //   attributes: [[Sequelize.fn('avg', Sequelize.col('value')), 'average']],
-    //   where: excludedWallets.map((wallet) => ({
-    //     address: { [Op.notLike]: wallet },
-    //   })),
-    // });
     return _avg.value;
   }
 
@@ -112,6 +106,7 @@ class HolderWallets extends Base {
           },
           data: {
             value: toDecimals(result) || 0,
+            updated_at: new Date(),
           },
         });
 

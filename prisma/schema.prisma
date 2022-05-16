@@ -11,20 +11,23 @@ datasource db {
 }
 
 model Blocks {
-  id            Int  @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   firstBlock    Int
   previousBlock Int?
   lastBlock     Int
+  updated_at    DateTime @default(now())
 }
 
 model Transfers {
-  id      Int    @id @default(autoincrement())
-  address String
-  block   Int
+  id         Int      @id @default(autoincrement())
+  address    String
+  block      Int
+  updated_at DateTime @default(now())
 }
 
 model Holders {
-  id      Int    @id @default(autoincrement())
-  address String
-  value   Float
+  id         Int      @id @default(autoincrement())
+  address    String
+  value      Float
+  updated_at DateTime @default(now())
 }
