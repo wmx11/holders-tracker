@@ -106,7 +106,6 @@ class HolderWallets extends Base {
           },
           data: {
             value: toDecimals(result) || 0,
-            updated_at: new Date(),
           },
         });
 

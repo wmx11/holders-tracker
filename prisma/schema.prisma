@@ -22,12 +22,14 @@ model Transfers {
   id         Int      @id @default(autoincrement())
   address    String
   block      Int
-  updated_at DateTime @default(now())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
 
 model Holders {
   id         Int      @id @default(autoincrement())
   address    String
   value      Float
-  updated_at DateTime @default(now())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
