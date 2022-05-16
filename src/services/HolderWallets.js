@@ -203,6 +203,8 @@ class HolderWallets extends Base {
         this.setIterations(wallets.length - 1);
       }
 
+      console.log('Iterations -> ', this.iterations);
+
       if (this.iteration <= this.iterations) {
         setTimeout(async () => {
           await this.createOrUpdateWalletBalance(
