@@ -51,18 +51,10 @@ class HolderWallets extends Base {
    * @returns Number
    */
   async getHoldersCount() {
-    const {
-      data: { price },
-    } = await axios(`${config.serviceEndpoint}/get-price`);
-
-    if (!price) {
-      return null;
-    }
-
     const holdersCount = await prisma.holders.count({
       where: {
         value: {
-          gte: this.calculateMinHoldingValue(price) / 10 ** 16,
+          gte: 1,
         },
       },
     });
