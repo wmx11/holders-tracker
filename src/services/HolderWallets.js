@@ -125,12 +125,13 @@ class HolderWallets extends Base {
 
         console.log('Updated ->', updatdWallet.address, updatdWallet.value);
       } else {
-        await prisma.holders.create({
+        const newEntry = await prisma.holders.create({
           data: {
             address,
             value: toDecimals(result) || 0,
           },
         });
+        console.log('Created ->', newEntry.address, newEntry.value);
       }
     });
   }
