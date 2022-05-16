@@ -116,7 +116,7 @@ class HolderWallets extends Base {
       if (existingWallet) {
         await prisma.holders.update({
           where: {
-            address,
+            id: existingWallet.id,
           },
           data: {
             value: toDecimals(result) || 0,
