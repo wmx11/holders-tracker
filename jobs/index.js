@@ -1,7 +1,7 @@
 const partialWalletsUpdate = require('../src/commands/partialWalletsUpdate.js');
 const updateWalletsFromPreviousBlock = require('../src/commands/updateWalletsFromPreviousBlock.js');
 
-const CronJob = require('../lib/cron.js').CronJob;
+const CronJob = require('cron').CronJob;
 
 console.log('Starting Jobs');
 
