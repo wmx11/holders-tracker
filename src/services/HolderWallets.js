@@ -1,10 +1,9 @@
-const { Op, Sequelize } = require('sequelize');
 const { forEachAsync } = require('foreachasync');
 
-const Base = require('./Base');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
-const Transfers = require('../../models/Transfers');
-const Holders = require('../../models/Holders');
+const Base = require('./Base');
 
 const excludedWallets = require('../../utils/excludedWallets');
 const toDecimals = require('../../utils/toDecimals');
@@ -18,29 +17,32 @@ class HolderWallets extends Base {
   }
 
   /**
-   * Returns the position of the wallet address 
+   * Returns the position of the wallet address
    * In the holders list
-   * @param {String} walletAddress 
-   * @returns Number 
+   * @param {String} walletAddress
+   * @returns Number
    */
   async getWalletPosition(walletAddress) {
-    const orderedWallets = await Holders.findAll({
-      order: [
-        ['value', 'DESC']
-      ]
+    const orderedWallets = await prisma.holders.findMany({
+      orderBy: [{ value: 'desc' }],
     });
 
-    const walletPosition = orderedWallets.findIndex((wallet) => wallet.address.toLowerCase() === walletAddress.toLowerCase());
+    const walletPosition = orderedWallets.findIndex(
+      (wallet) => wallet.address.toLowerCase() === walletAddress.toLowerCase()
+    );
 
     if (walletPosition > -1) {
-      return walletPosition + 1;
+      return {
+        position: walletPosition + 1,
+        wallet: orderedWallets[walletPosition],
+      };
     }
 
     return walletPosition;
   }
 
   calculateMinHoldingValue(price) {
-    const tokensForOneCent = (1 / price) / 100;
+    const tokensForOneCent = 1 / price / 100;
     return tokensForOneCent;
   }
 
@@ -49,21 +51,22 @@ class HolderWallets extends Base {
    * @returns Number
    */
   async getHoldersCount() {
-    const { data: { price } } = await axios(`${config.serviceEndpoint}/get-price`);
+    const {
+      data: { price },
+    } = await axios(`${config.serviceEndpoint}/get-price`);
 
     if (!price) {
       return null;
     }
 
-    const holdersCount = await Holders.count({
-      where: [
-        {
-          value: {
-            [Op.gte]: this.calculateMinHoldingValue(price) / 10 ** 16,
-          },
+    const holdersCount = await prisma.holders.count({
+      where: {
+        value: {
+          gte: this.calculateMinHoldingValue(price) / 10 ** 16,
         },
-      ],
+      },
     });
+
     return holdersCount;
   }
 
@@ -72,13 +75,18 @@ class HolderWallets extends Base {
    * @returns {Object}
    */
   async getAverageHoldings() {
-    const [results] = await Holders.findAll({
-      attributes: [[Sequelize.fn('avg', Sequelize.col('value')), 'average']],
-      where: excludedWallets.map((wallet) => ({
-        address: { [Op.notLike]: wallet },
-      })),
+    const { _avg } = await prisma.holders.aggregate({
+      _avg: {
+        value: true,
+      },
     });
-    return results.dataValues.average;
+    // const [results] = await Holders.findAll({
+    //   attributes: [[Sequelize.fn('avg', Sequelize.col('value')), 'average']],
+    //   where: excludedWallets.map((wallet) => ({
+    //     address: { [Op.notLike]: wallet },
+    //   })),
+    // });
+    return _avg.value;
   }
 
   /**
@@ -87,7 +95,11 @@ class HolderWallets extends Base {
    * @returns String
    */
   async getExistingWallet(address) {
-    const wallet = await Holders.findOne({ where: { address } });
+    const wallet = await prisma.holders.findFirst({
+      where: {
+        address,
+      },
+    });
     return wallet;
   }
 
@@ -102,12 +114,21 @@ class HolderWallets extends Base {
 
     this.getWalletBalance(address, async (err, result) => {
       if (existingWallet) {
-        await Holders.update(
-          { value: toDecimals(result) || 0 },
-          { where: { address } }
-        );
+        await prisma.holders.update({
+          where: {
+            address,
+          },
+          data: {
+            value: toDecimals(result) || 0,
+          },
+        });
       } else {
-        await Holders.create({ address, value: toDecimals(result) || 0 });
+        await prisma.holders.create({
+          data: {
+            address,
+            value: toDecimals(result) || 0,
+          },
+        });
       }
     });
   }
@@ -119,15 +140,19 @@ class HolderWallets extends Base {
    */
   buildUniqueWalletsDatabase() {
     return new Promise(async (resolve, reject) => {
-      const transferEvents = await Transfers.findAll({
-        attributes: ['address'],
-        group: ['address'],
+      const transferEvents = await prisma.transfers.findMany({
+        distinct: ['address'],
       });
 
       await forEachAsync(transferEvents, async ({ address }) => {
         const existingWallet = await this.getExistingWallet(address);
         if (!existingWallet) {
-          await Holders.create({ address, value: 0 });
+          await prisma.holders.create({
+            data: {
+              address,
+              value: 0,
+            },
+          });
         }
       });
 
@@ -142,15 +167,15 @@ class HolderWallets extends Base {
   updateAllWalletsBalances() {
     return new Promise(async (resolve, reject) => {
       if (this.iterations === 0) {
-        const holdersCount = await Holders.count();
+        const holdersCount = await prisma.holders.count();
         this.setIterations(holdersCount);
       }
 
       if (this.iteration <= this.iterations) {
         setTimeout(async () => {
-          const wallet = await Holders.findOne({
-            offset: this.iteration,
-            limit: 1,
+          const wallet = await prisma.holders.findFirst({
+            skip: this.iteration,
+            take: 1,
           });
 
           this.addIteration();

@@ -1,6 +1,7 @@
 const Web3 = require('web3');
 
-const Blocks = require('../../models/Blocks');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 const config = require('../../config');
 
@@ -17,8 +18,8 @@ class Base {
   }
 
   async getLastBlock() {
-    const results = await Blocks.findOne({
-      order: [['id', 'DESC']]
+    const results = await prisma.blocks.findFirst({
+      orderBy: [{ id: 'desc' }],
     });
 
     return results;
@@ -52,7 +53,9 @@ class Base {
   }
 
   getWalletBalance(address, cb) {
-    return this.contract.methods.balanceOf(address).call({ from: config.walletAddress }, cb);
+    return this.contract.methods
+      .balanceOf(address)
+      .call({ from: config.walletAddress }, cb);
   }
 }
 

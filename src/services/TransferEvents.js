@@ -1,9 +1,7 @@
-const { Op } = require('sequelize');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 const Base = require('./Base');
-
-const Transfers = require('../../models/Transfers');
-const Blocks = require('../../models/Blocks');
 
 const config = require('../../config');
 
@@ -37,7 +35,9 @@ class TransferEvents extends Base {
         blockNumber,
       } = result;
       if (to !== config.contractAddress) {
-        await Transfers.create({ address: to, block: blockNumber });
+        await prisma.transfers.create({
+          data: { address: to, block: blockNumber },
+        });
       }
     });
   }
@@ -57,10 +57,12 @@ class TransferEvents extends Base {
         if (!lastBlock) {
           const latestBlock = await this.getLatestBlock();
 
-          await Blocks.create({
-            firstBlock: config.contractCreationStartBlock,
-            previousBlock: config.contractCreationStartBlock,
-            lastBlock: latestBlock,
+          await prisma.blocks.create({
+            data: {
+              firstBlock: config.contractCreationStartBlock,
+              previousBlock: config.contractCreationStartBlock,
+              lastBlock: latestBlock,
+            },
           });
         }
 
@@ -84,22 +86,22 @@ class TransferEvents extends Base {
         const newFromBlock = fromBlock + config.blockChunks;
         const newToBlock = newFromBlock + config.blockChunks;
 
-        const lastTransferEvent = await Transfers.findOne({
-          order: [['id', 'DESC']],
-          limit: 1,
+        const lastTransferEvent = await prisma.transfers.findFirst({
+          orderBy: [{ id: 'desc' }],
+          take: 1,
         });
 
         const lastBlock = await this.getLastBlock();
 
         if (lastBlock && lastTransferEvent) {
-          await Blocks.update(
-            { lastBlock: lastTransferEvent.block },
-            {
-              where: {
-                id: 1,
-              },
-            }
-          );
+          await prisma.blocks.update({
+            data: {
+              lastBlock: lastTransferEvent.block,
+            },
+            where: {
+              id: 1,
+            },
+          });
         }
 
         return resolve(
@@ -122,10 +124,10 @@ class TransferEvents extends Base {
   getPreviousTransferEvents() {
     return new Promise(async (resolve, reject) => {
       const { previousBlock } = await this.getLastBlock();
-      const previousTransferEvents = await Transfers.findAll({
+      const previousTransferEvents = await prisma.transfers.findMany({
         where: {
           block: {
-            [Op.gte]: previousBlock,
+            gte: previousBlock,
           },
         },
       });
@@ -151,14 +153,14 @@ class TransferEvents extends Base {
       const toBlock = await this.getLatestBlock();
 
       if (lastBlock) {
-        await Blocks.update(
-          { previousBlock: fromBlock },
-          {
-            where: {
-              id: 1,
-            },
-          }
-        );
+        await prisma.blocks.update({
+          data: {
+            previousBlock: fromBlock,
+          },
+          where: {
+            id: 1,
+          },
+        });
       }
 
       console.log('Checking ->', fromBlock, toBlock);
