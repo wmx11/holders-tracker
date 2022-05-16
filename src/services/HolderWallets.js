@@ -114,7 +114,7 @@ class HolderWallets extends Base {
 
     this.getWalletBalance(address, async (err, result) => {
       if (existingWallet) {
-        const updatdWallet = await prisma.holders.update({
+        const updatedWallet = await prisma.holders.update({
           where: {
             id: existingWallet.id,
           },
@@ -123,7 +123,13 @@ class HolderWallets extends Base {
           },
         });
 
-        console.log('Updated ->', updatdWallet.address, updatdWallet.value);
+        console.log(
+          'Updated ->',
+          updatedWallet.id,
+          ' -- ',
+          updatedWallet.address,
+          updatedWallet.value
+        );
       } else {
         const newEntry = await prisma.holders.create({
           data: {
@@ -131,7 +137,13 @@ class HolderWallets extends Base {
             value: toDecimals(result) || 0,
           },
         });
-        console.log('Created ->', newEntry.address, newEntry.value);
+        console.log(
+          'Created ->',
+          newEntry.id,
+          ' -- ',
+          newEntry.address,
+          newEntry.value
+        );
       }
     });
   }
