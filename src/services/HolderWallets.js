@@ -71,6 +71,13 @@ class HolderWallets extends Base {
       _avg: {
         value: true,
       },
+      where: {
+        NOT: excludedWallets.map((wallet) => ({
+          address: {
+            contains: wallet,
+          },
+        })),
+      },
     });
     return _avg.value;
   }
