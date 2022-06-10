@@ -8,7 +8,6 @@ const Base = require('./Base');
 const excludedWallets = require('../../utils/excludedWallets');
 const toDecimals = require('../../utils/toDecimals');
 const config = require('../../config');
-const axios = require('axios');
 
 class HolderWallets extends Base {
   constructor() {
@@ -23,22 +22,32 @@ class HolderWallets extends Base {
    * @returns Number
    */
   async getWalletPosition(walletAddress) {
-    const orderedWallets = await prisma.holders.findMany({
-      orderBy: [{ value: 'desc' }],
+    const wallet = await prisma.holders.findFirst({
+      where: {
+        address: walletAddress.toLowerCase(),
+      },
     });
 
-    const walletPosition = orderedWallets.findIndex(
-      (wallet) => wallet.address.toLowerCase() === walletAddress.toLowerCase()
-    );
-
-    if (walletPosition > -1) {
-      return {
-        position: walletPosition + 1,
-        wallet: orderedWallets[walletPosition],
-      };
+    if (!wallet) {
+      return {};
     }
 
-    return walletPosition;
+    const position = await prisma.holders.count({
+      where: {
+        value: {
+          gte: wallet.value,
+        },
+      },
+    });
+
+    if (!position) {
+      return {};
+    }
+
+    return {
+      position,
+      wallet,
+    };
   }
 
   calculateMinHoldingValue(price) {
