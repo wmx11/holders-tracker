@@ -4,6 +4,6 @@ module.exports = {
   contractCreationStartBlock: 17166684,
   rpcEndpoint: 'https://bsc-dataseed1.binance.org',
   blockChunks: 2000,
-  requestTimeout: 20,
+  requestTimeout: 40,
   serviceEndpoint: '',
 }
