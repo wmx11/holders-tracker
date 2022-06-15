@@ -24,9 +24,11 @@ model Transfers {
 }
 
 model Holders {
-  id         Int      @id @default(autoincrement())
-  address    String
-  value      Float
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  address         String
+  value           Float
+  note            String?
+  isProjectWallet Boolean  @default(false)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 }
